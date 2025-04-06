@@ -60,7 +60,7 @@ MyGL_Vec3 rayPoints[2];
 std::vector<std::array<int, 3>> traceCells;
 std::vector<std::array<MyGL_Vec3, 3>> dtris;
 std::shared_ptr<utils::heap::Heap> myHeap = nullptr;
-std::unique_ptr<mbz::AOSolver> aoSolver = nullptr;
+std::unique_ptr<mbz::LightSolver> solver = nullptr;
 std::shared_ptr<bpcd::Grid> grid = nullptr;
 bool wireFrame = false;
 
@@ -238,11 +238,15 @@ void init() {
   loadFont("lemonmilk");
   loadShaderLibraries();
 
-  myHeap = std::make_shared<utils::heap::Heap>(64 * 1024 * 1024);
-  aoSolver = std::make_unique<mbz::AOSolver>(myHeap);
-  aoSolver->create("demo_scene", 512, 512);
-  grid = aoSolver->grid;
-  aoSolver->begin();
+  myHeap = std::make_shared<utils::heap::Heap>(32 * 1024 * 1024);
+  solver = std::make_unique<mbz::LightSolver>(myHeap);
+  LightSolver::Lighting lighting;
+  lighting.skyColor = Color(157, 169, 207);
+  lighting.sunColor = Color(240, 238, 185);
+  lighting.sunDirection = Vector3(1.0f, 1.0f, 2.0f).normalized();
+  solver->create("demo_scene", 512, 512, lighting);
+  grid = solver->grid;
+  solver->begin();
 
   //std::vector<std::array<Vector3, 3>> tris;
   //tris.push_back(tri);
@@ -520,8 +524,8 @@ void draw() {
 
 void term() {
   printf("*** TERM ***\n");
-  aoSolver->join();
-  aoSolver->save();
+  solver->join();
+  solver->save();
   float recycle_rate = 100.0f * (float) myHeap->recycles / (float) (myHeap->reservations + myHeap->recycles);
   LOGINFO(__FUNCTION__, "reservations v. recycles: %d v %d (recycle rate ~%.2f%%)", myHeap->reservations, myHeap->recycles, recycle_rate);
   LOGINFO(__FUNCTION__, "%f out of %f mbs reserved for use", ((float ) myHeap->total() - myHeap->remaining()) / (1024.0f * 1024.0f), (float ) myHeap->total() / (1024.0f * 1024.0f));

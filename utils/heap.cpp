@@ -10,7 +10,7 @@ namespace heap {
 
 Heap::Heap(int hunkSize) {
 
-  hunkSize = std::clamp(hunkSize, 4 * 1024, 64 * 1024 * 1024);
+  hunkSize = std::clamp(hunkSize, 4 * 1024, 256 * 1024 * 1024);
   hunk = std::vector<uint8_t>(hunkSize);
   memset(hunk.data(), 0, hunk.size());
   memset(table, 0, sizeof(table));

@@ -8,6 +8,8 @@
 #include <condition_variable>
 #include <string>
 #include <string_view>
+#include <memory>
+
 #include "array.h"
 
 extern uint64_t getCounter();
@@ -17,16 +19,19 @@ namespace mbz {
 namespace utils {
 namespace multithread {
 
-
+struct Toolbox {
+  virtual ~Toolbox() = default;
+};
 
 struct Task {
-  virtual void perform() = 0;
+  virtual void perform(Toolbox *toolbox) = 0;
   virtual ~Task() = default;
 };
 
 template<int N>
 class Workers {
   std::array<std::thread, N> workers;
+
   std::mutex mutex;
   std::condition_variable condition;
   int tasksPer;
@@ -39,6 +44,9 @@ class Workers {
   utils::heap::Array<std::unique_ptr<Task>> todo;
   utils::heap::Array<std::unique_ptr<Task>> completed;
 
+  virtual std::unique_ptr<Toolbox> createToolbox() {
+    return std::make_unique<Toolbox>();
+  }
   Workers(std::shared_ptr<heap::Heap> heap, uint32_t taskCount, int tasksPer_ = 1)
       :
       tasksPer(tasksPer_),
@@ -57,6 +65,8 @@ class Workers {
       //ss >> id;
       bool run = true;
       std::vector<std::unique_ptr<Task>> tasks;
+
+      auto toolbox = createToolbox();
       LOGINFO("Workers::work", "%s started...", id.c_str());
       while (run) {
         {
@@ -76,7 +86,7 @@ class Workers {
 
         if (!tasks.empty()) {
           for (auto &task : tasks) {
-            task->perform();
+            task->perform(toolbox.get());
           }
           {
             std::lock_guard<std::mutex> lg(completedMutex);

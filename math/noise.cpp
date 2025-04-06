@@ -8,17 +8,11 @@ namespace mbz {
 namespace math {
 namespace mc {
 
-MTRandWrapper mtRand(345);
-
 //std::random_device rd;  // For random seed
 //std::mt19937 gen(rd());  // Mersenne Twister engine
 //std::uniform_real_distribution<> dis(0.0, 1.0);  // Uniform distribution between 0
 
-void seedRand(uint32_t seed) {
-  mtRand.seed(seed);
-}
-
-Vector3 randomPointOnHemisphere() {
+Vector3 randomPointOnHemisphere(MTRandWrapper& mtRand) {
   constexpr double pi = 3.14159265358979323846;
 
   double yaw = 2.0 * pi * mtRand.random();
@@ -30,7 +24,7 @@ Vector3 randomPointOnHemisphere() {
   return v;
 }
 
-Vector3 randomPointOnSphere() {
+Vector3 randomPointOnSphere(MTRandWrapper& mtRand) {
   constexpr double pi = 3.14159265358979323846;
 
   double yaw = 2.0 * pi * mtRand.random();

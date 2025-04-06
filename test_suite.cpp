@@ -406,7 +406,7 @@ void testMultithread(){
    utils::multithread::Workers<8> workers(heap, 50);
    struct Task : public utils::multithread::Task{
      int x;
-     virtual void perform() override {
+     virtual void perform(utils::multithread::Toolbox *toolbox) override {
        printf("x = %d\n", x);
      }
    };

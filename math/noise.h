@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../thirdparty/mtwister/mtwister.h"
+
 #include <inttypes.h>
 #include "vector.h"
 
@@ -7,9 +9,8 @@ namespace mbz {
 namespace math {
 namespace mc {
 
-void seedRand(uint32_t val);
-Vector3 randomPointOnHemisphere();
-Vector3 randomPointOnSphere();
+Vector3 randomPointOnHemisphere(MTRandWrapper& mtRand);
+Vector3 randomPointOnSphere(MTRandWrapper& mtRand);
 
 }
 }
