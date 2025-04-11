@@ -72,8 +72,15 @@ bool Grid::build(const std::vector<std::array<Vector3, 3>> &trisPoints, Vector3 
       for (int r = rRange[0]; r <= rRange[1]; r++) {
         for (int c = cRange[0]; c <= cRange[1]; c++) {
           Aabb aabb = cellBox(l, r, c);
-          if (!aabb.collidesWith(triPoints))
+          Sphere sphere(aabb.p, aabb.halfSize.lengthSq());
+          Sphere sphere2(triPoints);
+          if (!sphere.touches(sphere2))
             continue;
+          if(!aabb.intersects(triPoints))
+            continue;
+
+          //if (!aabb.collidesWith(triPoints))
+          //  continue;
           Cell *cell = cells.insertIf(Cell(l, r, c, aabb, heap));
           cell->triIndices.append(index);
         }
@@ -91,7 +98,6 @@ bool Grid::build(const std::vector<std::array<Vector3, 3>> &trisPoints, Vector3 
 
   return true;
 }
-
 
 bool Grid::traceRay(RaySeg raySeg, Trace &trace, std::optional<std::reference_wrapper<std::vector<std::array<int, 3>>>> indices) const {
 
@@ -180,18 +186,18 @@ bool Grid::traceRay(RaySeg raySeg, Trace &trace, std::optional<std::reference_wr
       break;
 
   return trace();
-  /*
-   bool hit = false;
-   for (int i = 0; i < triIndices.size; i++) {
-   auto bcs = tris.kp()[triIndices.kp()[i]];
-   auto coord = bcs.project(raySeg);
-   if (coord.has_value()) {
-   trace.index = i;
-   trace.bcsCoord = coord;
-   trace.point = bcs.o + coord->x * bcs.u + coord->y * bcs.v;
-   raySeg.dist = raySeg.p.point(*trace.point).dot(raySeg.d);
-   hit = true;
-   }
-   }
-   */
+
+  bool hit = false;
+  for (int i = 0; i < tris.size; i++) {
+    auto bcs = tris.kp()[i];
+    auto coord = bcs.project(raySeg);
+    if (coord.has_value()) {
+      trace.index = i;
+      trace.bcsCoord = coord;
+      trace.point = bcs.o + coord->x * bcs.u + coord->y * bcs.v;
+      raySeg.dist = raySeg.p.point(*trace.point).dot(raySeg.d);
+      hit = true;
+    }
+  }
+  return hit;
 }

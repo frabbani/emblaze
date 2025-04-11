@@ -10,6 +10,15 @@
 namespace mbz {
 namespace math {
 
+enum class Axis {
+  PosX,
+  PosY,
+  PosZ,
+  NegX,
+  NegY,
+  NegZ
+};
+
 struct Ray {
   Vector3 p, d;
   Ray() = default;
@@ -41,7 +50,7 @@ struct RaySeg : public Ray {
     if (dist > math::tolSq) {
       dist = sqrtf(dist);
       this->d *= (1.0f / dist);
-    } else{
+    } else {
       dist = 0.0f;
       this->d = Vector3(0.0f, 0.0f, 0.0f);
     }
@@ -191,11 +200,85 @@ struct Rect {
 
 };
 
-struct Aabb {
+struct Sphere {
+  Vector3 p;
+  float radiusSq = 0.0f;
+  void fromTriangle(const std::array<Vector3, 3> &tri) {
+    p = 0.3333f * (tri[0] + tri[1] + tri[2]);
+    radiusSq = 0.0f;
+    for (int i = 0; i < 3; i++) {
+      float lengthSq = p.point(tri[i]).lengthSq();
+      radiusSq = std::max(lengthSq, radiusSq);
+    }
+  }
+
+  float radius() const {
+    return radiusSq > math::tol ? sqrtf(radiusSq) : 0.0f;
+  }
+  Sphere() = default;
+  Sphere(Vector3 p, float radiusSquared)
+      :
+      p(p),
+      radiusSq(radiusSquared) {
+  }
+
+  Sphere(const std::array<Vector3, 3> &tri) {
+    fromTriangle(tri);
+  }
+
+  bool touches(const Sphere &other) const {
+    return p.point(other.p).lengthSq() < (radiusSq + other.radiusSq);
+  }
+};
+
+struct Convex {
+  virtual void getPlanes(std::vector<Plane> &planes) {
+  }
+  virtual ~Convex() {
+  }
+
+  bool intersects(const Ray &ray, float &dist) {
+    std::vector<Plane> planes;
+    std::vector<Plane> back;
+    std::vector<Plane> front;
+    getPlanes(planes);
+    for (auto &plane : planes) {
+      float ddotn = ray.d.dot(plane.n);
+      if (ddotn > 0.0f)
+        back.push_back(plane);
+      if (ddotn < 0.0f)
+        front.push_back(plane);
+    }
+    Vector3 o, e;
+    o = e = ray.p;
+    dist = 0.0f;
+    for (auto &plane : front) {
+      dist = std::max(plane.rayDist(ray), dist);
+    }
+
+    e = o + ray.dir() * dist;
+    for (auto &plane : back) {
+      float dist = plane.solve(e);
+      if (dist > 0.0f)
+        return false;
+    }
+    return true;
+  }
+
+  bool intersects(const RaySeg &raySeg, float &dist) {
+    if (intersects(static_cast<const Ray&>(raySeg), dist))
+      return dist <= raySeg.dist;
+    return false;
+  }
+};
+
+struct Aabb : public Convex {
   Vector3 p;
   Vector3 halfSize;
 
   Aabb() = default;
+
+  virtual void getPlanes(std::vector<Plane> &planes) override;
 
   Vector3 minExtent() const {
     return p - halfSize;
@@ -228,7 +311,17 @@ struct Aabb {
     }
   }
 
+//  Rect getRect(Axis axis);
+
   std::optional<RaySeg> clip(const Ray &ray);
+
+  bool inside(const Vector3 &point);
+
+  void getCorners(std::vector<Vector3>& points) const;
+
+  void getEdges(std::vector<RaySeg> &raySegs) const;
+
+  bool intersects(const std::array<Vector3, 3> &triPoints);
 
   bool collidesWith(const std::array<Vector3, 3> &triPoints);
 };

@@ -248,12 +248,12 @@ void NN_backward_propagate(NN_neural_network_t *nn) {
         NN_neural_layer_t *prev_layer = curr_layer->feed;
         for (int j = 0; j < prev_layer->size; j++) {
           neuron->weights[j] -= learning_rate * hidden_error[i] * prev_layer->neurons[j].value;
-          neuron->weights[j] *= (1.0 - lambda);
+          neuron->weights[j] *= (1.0 - lambda * learning_rate);
         }
       } else if (curr_layer->type == 0) {  // feed in the input
         for (int j = 0; j < nn->info.input_size; j++) {
           neuron->weights[j] -= learning_rate * hidden_error[i] * nn->input[j];
-          neuron->weights[j] *= (1.0 - lambda);
+          neuron->weights[j] *= (1.0 - lambda * learning_rate);
         }
       }
     }

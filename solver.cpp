@@ -610,7 +610,7 @@ void LightSolver::Task::perform(utils::multithread::Toolbox *toolbox) {
   Toolbox *tools = dynamic_cast<Toolbox*>(toolbox);
 
   auto sun_light = [&](Vector3 d) {
-    float max = 0.9;
+    float max = 0.98;
     float ddotl = d.dot(lighting.sunDirection);
     return ddotl < max ? 0.0f : 1.0f;
   };
@@ -619,7 +619,7 @@ void LightSolver::Task::perform(utils::multithread::Toolbox *toolbox) {
   Vector3 sun = 1.0f / 255.0f * Vector3(lighting.sunColor.r, lighting.sunColor.g, lighting.sunColor.b);
   Vector3 o = p + 0.001f * n;
 
-  int N = 128;
+  int N = 48;
   int total = 0;
   Vector3 sum = Vector3(0.0f, 0.0f, 0.0f);
   while (total < N) {
@@ -634,20 +634,20 @@ void LightSolver::Task::perform(utils::multithread::Toolbox *toolbox) {
     grid->traceRay(raySeg, trace);
     if (!trace.point.has_value()) {
       sum = sum + ddotn * sky;
-      sum = sum + (sun_light(d) * ddotn) * sun * 3.14f;
+      //sum = sum + (sun_light(d) * ddotn) * sun * 15.0f;
     }
   }
   sum = 2.0f / N * sum;
 
-//  Ray ray(o, lighting.sunDirection);
-//  RaySeg raySeg(ray, 10.0f);
-//  bpcd::Grid::Trace trace(raySeg);
-//  grid->traceRay(raySeg, trace);
-//  if (!trace.point.has_value()){
-//    float ndotl = n.dot(lighting.sunDirection);
-//    if(ndotl > 0.0f)
-//      sum = sum + ndotl * sun;
-//  }
+  Ray ray(o, lighting.sunDirection);
+  RaySeg raySeg(ray, 10.0f);
+  bpcd::Grid::Trace trace(raySeg);
+  grid->traceRay(raySeg, trace);
+  if (!trace.point.has_value()){
+    float ndotl = n.dot(lighting.sunDirection);
+    if(ndotl > 0.0f)
+      sum = sum + ndotl * sun;
+  }
 
   for (int i = 0; i < 3; i++)
     sum.xyz[i] = sum.xyz[i] < 0.0f ? 0.0f : sum.xyz[i] > 1.0f ? 1.0f : sum.xyz[i];
