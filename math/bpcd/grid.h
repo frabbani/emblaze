@@ -29,7 +29,7 @@ struct Grid {
       r = rhs.r;
       c = rhs.c;
       aabb = rhs.aabb;
-      triIndices.free();
+      triIndices.release();
       triIndices.init(rhs.triIndices.heap, 8, rhs.triIndices.growth);
       for (int i = 0; i < rhs.triIndices.size; i++)
         triIndices.append(rhs.triIndices.kp()[i]);

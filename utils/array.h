@@ -4,6 +4,7 @@
 #include "heap.h"
 #include <cstring>
 
+
 namespace mbz {
 namespace utils {
 namespace heap {
@@ -14,6 +15,11 @@ enum Growth {
   Double,
 };
 
+struct Destructable {
+  virtual void destruct(){}
+  virtual ~Destructable(){ destruct();}
+};
+
 template<typename T>
 struct Array {
   Heap::Tile *tile = nullptr;
@@ -22,27 +28,32 @@ struct Array {
   int size = 0;
   Growth growth = Growth::Fib;
 
-  void init(std::shared_ptr<Heap> heap, int allocateCount, Growth growth = Growth::Fib) {
+  //static_assert(std::is_trivially_destructible<T>::value, "heap::Array: T must be trivially destructible");
+
+  void init(std::shared_ptr<Heap> heap, int reserveCount, Growth growth = Growth::Fib) {
     this->heap = heap;
-    this->grow = allocateCount < 1 ? 1 : allocateCount;
+    this->grow = reserveCount < 1 ? 1 : reserveCount;
     this->size = 0;
     this->growth = growth;
-    tile = heap->reserve(allocateCount * sizeof(T));
+    tile = heap->reserve(reserveCount * sizeof(T));
   }
 
-  Array(std::shared_ptr<Heap> heap, uint32_t allocateCount, Growth growth = Growth::Fib) {
-    init(heap, allocateCount, growth);
+  Array(std::shared_ptr<Heap> heap, uint32_t reserveCount, Growth growth = Growth::Fib) {
+    init(heap, reserveCount, growth);
   }
 
   ~Array() {
-    free();
+    //LOGDEBUG("~Array", "calling release");
+    release();
   }
 
-  void free() {
+  void release() {
+    //LOGDEBUG("Array::release", "%s", std::is_base_of_v<Releaseable, T>? "(release-able)" : "" );
     if(tile){
-      if constexpr (std::is_destructible<T>::value) {
-        for (int i = 0; i < size; i++)
-          tile->kp<T>()[i].~T();
+      if constexpr (std::is_base_of_v<Destructable, T>) {
+        for (int i = 0; i < size; i++){
+          tile->p<T>()[i].destruct();
+        }
       }
       heap->release(tile);
     }
@@ -52,7 +63,7 @@ struct Array {
   }
 
   Array& operator = (const Array<T>& rhs){
-    free();
+    release();
     heap = rhs.heap;
     grow = rhs.grow;
     size = rhs.size;
@@ -102,8 +113,9 @@ struct Array {
     Heap::Tile *newTile = heap->reserve(newAlloc * sizeof(T));
 
     // copy
-    for (int i = 0; i < alloc; i++)
+    for (int i = 0; i < alloc; i++){
       newTile->p<T>()[i] = tile->p<T>()[i];
+    }
 
     // release
     heap->release(tile);
@@ -113,7 +125,7 @@ struct Array {
     tile->p<T>()[size++] = v;
   }
 
-  void append_move(T v) {
+  void append_move(T&& v) {
     int alloc = int(tile->size<T>());
 
     if (size < alloc) {
@@ -145,8 +157,11 @@ struct Array {
   }
 
   void remove_last() {
-    if (size > 0)
+    if (size > 0){
       size--;
+      if constexpr (std::is_base_of_v<Destructable, T>)
+          tile->p<T>()[size].release();
+    }
   }
 
 

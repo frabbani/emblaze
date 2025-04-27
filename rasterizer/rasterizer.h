@@ -75,6 +75,7 @@ struct VariableBase {
 }
 ;
 
+extern int scalarConDes;
 struct ScalarVariable : public VariableBase<float> {
   float vary(const float &next, float alpha) const override {
     return v + alpha * (next - v);
@@ -82,10 +83,13 @@ struct ScalarVariable : public VariableBase<float> {
   ScalarVariable()
       :
       VariableBase<float>() {
+    scalarConDes++;
   }
   ~ScalarVariable() {
     v = 0.0f;
+    //scalarConDes--;
   }
+
 };
 
 struct Vector2Variable : public VariableBase<Vector2> {
@@ -155,13 +159,17 @@ using TexelVariables = utils::heap::Array<TexelVariable>;
 
 using Variable = std::variant<ScalarVariable, Vector2Variable, Vector3Variable, ColorVariable, TexelVariable>;
 using Variables = std::variant<ScalarVariables, Vector2Variables, Vector3Variables, ColorVariables, TexelVariables >;
-using Plots = std::vector<Variable>;
+using Plot = std::vector<Variable>;
 using Layers = std::vector<Variables>;
 
-struct Point {
+struct Point : public utils::heap::Destructable {
   Vector2 p;
-  Plots plots;
+  Plot plot;
   static Point blendPoints(const Point &begin, const Point &end, float alpha);
+  virtual void destruct() override {
+    plot.clear();
+    LOGDEBUG("Point::release", "plot cleared");
+  }
 };
 
 struct Canvas {
@@ -169,9 +177,17 @@ struct Canvas {
   std::shared_ptr<utils::heap::Heap> heap = nullptr;
   Layers layers;
 
+  ~Canvas() {
+    printf("~Canvas\n");
+    while (!layers.empty()) {
+      layers.pop_back();
+      printf(" + layer cleared...\n");
+    }
+  }
+
   Canvas(std::shared_ptr<utils::heap::Heap> heap, uint32_t w, uint32_t h, const std::vector<VariableType> &types);
 
-  size_t xy(int32_t x, int32_t y) {
+  size_t xy(int32_t x, int32_t y) const {
     x = std::clamp(x, 0, int32_t(w - 1));
     y = std::clamp(y, 0, int32_t(h - 1));
     return size_t(y * w + x);
@@ -190,7 +206,7 @@ struct Canvas {
    }
    */
 
-  Point createPoint(int x = 0, int y = 0);
+  Point createPoint(int x = 0, int y = 0) const;
   void plotPoint(const Point &pt, int x, int y);
 };
 

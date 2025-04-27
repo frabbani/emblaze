@@ -5,6 +5,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
 #include <mygl.h>
 #include <vecdefs.h>
@@ -30,6 +31,12 @@
 #include "graphics/camera.h"
 #include "graphics/shaders.h"
 #include "utils/hash.h"
+
+#include "solvers/lightmap.h"
+#include "solvers/builder.h"
+#include "solvers/solver.h"
+#include "solvers/ambient.h"
+
 
 #include "solver.h"
 
@@ -60,8 +67,11 @@ MyGL_Vec3 rayPoints[2];
 std::vector<std::array<int, 3>> traceCells;
 std::vector<std::array<MyGL_Vec3, 3>> dtris;
 std::shared_ptr<utils::heap::Heap> myHeap = nullptr;
-std::unique_ptr<mbz::LightSolver> solver = nullptr;
+std::shared_ptr<lightmap::Lightmap> lightmap = nullptr; //std::make_shared<lightmap::Lightmap>(myHeap, 256, 256);
+std::shared_ptr<lightmap::LightmapBuilder> builder = nullptr; //(myHeap, lightmap);
 std::shared_ptr<bpcd::Grid> grid = nullptr;
+//std::unique_ptr<mbz::LightSolver> solver = nullptr;
+
 bool wireFrame = false;
 
 constexpr int FPS = 40;
@@ -113,9 +123,10 @@ void loadMap(const bpcd::Grid &grid) {
           //    ofbx::LoadFlags::IGNORE_MESHES |
           ofbx::LoadFlags::IGNORE_ANIMATIONS;
 
+  printf("*** LOAD MAP ***\n");
   auto scene = ofbx::load(data.data.data(), data.data.size(), ofbx::u16(f));
   if (!scene->getMeshCount()) {
-    LOGERROR(__FUNCTION__, "scene has no mesh\n");
+    printf("scene has no mesh\n");
     return;
   }
   auto mesh = scene->getMesh(0);
@@ -124,10 +135,10 @@ void loadMap(const bpcd::Grid &grid) {
   for (int i = 0; i < mesh->getMaterialCount(); i++) {
     std::string name(mesh->getMaterial(i)->name);
     std::string file = "assets/" + name + ".png";
-    LOGINFO(__FUNCTION__, "    - loading texture '%s'", file.c_str());
+    printf("    - loading texture '%s'\n", file.c_str());
     FileData fileData(file);
     MyGL_Image image = MyGL_imageFromPNGData(fileData.data.data(), fileData.data.size(), mesh->getMaterial(i)->name);
-    LOGINFO(__FUNCTION__, "       + texture size %u x %u", image.w, image.h);
+    printf("       + texture size %u x %u\n", image.w, image.h);
     auto roImage = (MyGL_ROImage ) { image.w, image.h, image.pixels };
     MyGL_createTexture2D(name.c_str(), roImage, "rgb10a2", GL_TRUE, GL_TRUE, GL_TRUE);
     DrawElement e;
@@ -213,14 +224,23 @@ void loadMap(const bpcd::Grid &grid) {
     const Bcs3 &bcs = grid.tris.kp()[i];
     dtris.push_back( { myglv3(bcs.o), myglv3(bcs.o + bcs.u), myglv3(bcs.o + bcs.v) });
   }
-
+  printf("******\n");
 }
+
 
 void init() {
 
-  printf("*** INIT ***\n");
-
+  pr("*** INIT ***\n");
   utils::logger::logFunc(pr);
+  myHeap = std::make_shared<utils::heap::Heap>(64 * 1024 * 1024);
+  std::shared_ptr<lightmap::Lightmap> lightmap = std::make_shared<lightmap::Lightmap>(myHeap, 512, 512);
+  std::shared_ptr<lightmap::LightmapBuilder> builder = std::make_shared<lightmap::LightmapBuilder>(myHeap, lightmap);
+  builder->buildFromFBX("demo_scene", 0.1f);
+  lightmap->exportPNGs();
+  grid = builder->grid;
+  lightmap::AmbientOcclusionSolver aoSolver(*builder);
+  aoSolver.beginJoin();
+  aoSolver.save();
 
   mygl = MyGL_initialize(pr, 1, 0);
   mygl->cull.on = GL_FALSE;
@@ -238,15 +258,19 @@ void init() {
   loadFont("lemonmilk");
   loadShaderLibraries();
 
-  myHeap = std::make_shared<utils::heap::Heap>(32 * 1024 * 1024);
+  /*
   solver = std::make_unique<mbz::LightSolver>(myHeap);
-  LightSolver::Lighting lighting;
+  mbz::LightSolver::Lighting lighting;
   lighting.skyColor = Color(157, 169, 207);
   lighting.sunColor = Color(240, 238, 185);
   lighting.sunDirection = Vector3(1.0f, 1.0f, 2.0f).normalized();
-  solver->create("demo_scene", 512, 512, lighting);
+  solver->create("demo_scene", 128, 128, lighting);
   grid = solver->grid;
   solver->begin();
+ */
+
+
+
 
   //std::vector<std::array<Vector3, 3>> tris;
   //tris.push_back(tri);
@@ -524,8 +548,8 @@ void draw() {
 
 void term() {
   printf("*** TERM ***\n");
-  solver->join();
-  solver->save();
+  //solver->join();
+  //solver->save();
   float recycle_rate = 100.0f * (float) myHeap->recycles / (float) (myHeap->reservations + myHeap->recycles);
   LOGINFO(__FUNCTION__, "reservations v. recycles: %d v %d (recycle rate ~%.2f%%)", myHeap->reservations, myHeap->recycles, recycle_rate);
   LOGINFO(__FUNCTION__, "%f out of %f mbs reserved for use", ((float ) myHeap->total() - myHeap->remaining()) / (1024.0f * 1024.0f), (float ) myHeap->total() / (1024.0f * 1024.0f));

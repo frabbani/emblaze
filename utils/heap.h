@@ -6,7 +6,7 @@
 
 namespace mbz {
 namespace utils {
-namespace heap{
+namespace heap {
 
 struct Heap : public std::enable_shared_from_this<Heap> {
   static constexpr int tableSize = 1024;
@@ -25,6 +25,9 @@ struct Heap : public std::enable_shared_from_this<Heap> {
     Tile *next = nullptr;
    public:
 
+    int blockSize() const {
+      return block.size;
+    }
     template<class T>
     int size() const {
       return block.size / sizeof(T);
@@ -38,14 +41,14 @@ struct Heap : public std::enable_shared_from_this<Heap> {
     }
 
     template<class T>
-    const T *kp() const {
+    const T* kp() const {
       if (0 == size<T>())
         return nullptr;
       return reinterpret_cast<const T*>(block.data);
     }
 
     template<class T>
-    T *p(){
+    T* p() {
       if (0 == size<T>())
         return nullptr;
       return reinterpret_cast<T*>(block.data);
@@ -53,7 +56,7 @@ struct Heap : public std::enable_shared_from_this<Heap> {
   };
 
   std::shared_ptr<Heap> getShared() {
-      return shared_from_this();
+    return shared_from_this();
   }
  protected:
 
@@ -64,7 +67,7 @@ struct Heap : public std::enable_shared_from_this<Heap> {
     return (x % tableSize);
   }
 
-  int fetch(int size){
+  int fetch(int size) {
     pos += size;
     return (pos - size);
   }
@@ -84,9 +87,9 @@ struct Heap : public std::enable_shared_from_this<Heap> {
   int total() const {
     return (int) hunk.size();
   }
-  Tile *reserve(int size);
+  Tile* reserve(int size);
   void release(Tile *tile) {
-    if( tile )
+    if (tile)
       tile->used = false;
   }
 };

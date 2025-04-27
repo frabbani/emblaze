@@ -4,6 +4,8 @@
 #include "image.h"
 #include "log.h"
 
+#include "../thirdparty/lodepng/lodepng.h"
+
 namespace mbz {
 namespace utils {
 namespace img {
@@ -237,6 +239,43 @@ bool writeImageToBMPFile(const Image &image, std::string_view name) {
   }
 
   fclose(fp);
+  LOGINFO("writeImageToBMPFile", "image exported to '%s", file);
+
+  return true;
+}
+
+bool writeImageToPNGFile(const Image &image, std::string_view name) {
+  char file[256];
+  strcpy(file, name.data());
+  int ext = 0;
+  for (const char *p = name.data(); *p != '\0'; p++) {
+    if ('.' == p[0] && 'p' == p[1] && 'n' == p[2] && 'g' == p[3] && '\0' == p[4]) {
+      ext++;
+      break;
+    }
+  }
+  if (!ext)
+    strcat(file, ".png");
+  std::vector<uint8_t> data;
+  data.resize(image.w * image.h * 4);
+  int index = 0;
+  for (int y = image.h - 1; y >= 0; y--)
+    for (int x = 0; x < image.w; x++) {
+      data[index++] = image.pixels[y * image.w + x].r;
+      data[index++] = image.pixels[y * image.w + x].g;
+      data[index++] = image.pixels[y * image.w + x].b;
+      data[index++] = 255;
+    }
+
+  std::vector<unsigned char> png;
+  unsigned error = lodepng::encode(png, data.data(), image.w, image.h);
+  if (error) {
+    LOGERROR("writeImageToPNGFile", "failed to encode image '%s' - %s", file, lodepng_error_text(error));
+    return false;
+  }
+  lodepng::save_file(png, file);
+  LOGINFO("writeImageToPNGFile", "image exported to '%s", file);
+
   return true;
 }
 

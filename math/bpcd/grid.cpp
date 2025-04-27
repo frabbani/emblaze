@@ -186,7 +186,7 @@ bool Grid::traceRay(RaySeg raySeg, Trace &trace, std::optional<std::reference_wr
       break;
 
   return trace();
-
+  /*
   bool hit = false;
   for (int i = 0; i < tris.size; i++) {
     auto bcs = tris.kp()[i];
@@ -200,4 +200,5 @@ bool Grid::traceRay(RaySeg raySeg, Trace &trace, std::optional<std::reference_wr
     }
   }
   return hit;
+  */
 }

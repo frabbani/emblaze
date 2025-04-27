@@ -12,6 +12,9 @@ struct IsContainedIn<T, std::variant<Ts...>> : std::disjunction<std::is_same<T, 
 namespace mbz {
 namespace rasterizer {
 
+int scalarConDes = 0;
+
+
 std::string getTypeName(Variable var) {
   if (std::holds_alternative<ScalarVariable>(var)) {
     return "Scalar";
@@ -93,7 +96,7 @@ struct Vary {
 
 };
 
-Point Canvas::createPoint(int x, int y) {
+Point Canvas::createPoint(int x, int y) const {
   struct V {
     Variable &var;
     size_t index = 0;
@@ -121,9 +124,9 @@ Point Canvas::createPoint(int x, int y) {
   Point pt;
   size_t i = 0;
   size_t j = xy(x, y);
-  pt.plots = std::vector<Variable>(layers.size());
+  pt.plot = std::vector<Variable>(layers.size());
   for (const auto &layer : layers) {
-    V visitor(pt.plots[i++], j);
+    V visitor(pt.plot[i++], j);
     std::visit(visitor, layer);
   }
   return pt;
@@ -136,42 +139,38 @@ Canvas::Canvas(std::shared_ptr<utils::heap::Heap> heap, uint32_t w, uint32_t h, 
 
   size_t n = std::min(maxLayers, types.size());
   int m = int(w * h);
+  layers.reserve(n);
   for (size_t i = 0; i < n; i++) {
     switch (types[i]) {
       case Vector2Type: {
-        Vector2Variables layer(heap, m, utils::heap::Growth::Fixed);
+        layers.emplace_back(std::in_place_type<Vector2Variables>, heap, m, utils::heap::Growth::Fixed );
         for (int i = 0; i < m; i++)
-          layer.append(Vector2Variable());
-        layers.push_back(std::move(layer));
+          std::get<Vector2Variables>(layers.back()).append(Vector2Variable());
         break;
       }
       case Vector3Type: {
-        Vector3Variables layer(heap, m, utils::heap::Growth::Fixed);
+        layers.emplace_back(std::in_place_type<Vector3Variables>, heap, m, utils::heap::Growth::Fixed );
         for (int i = 0; i < m; i++)
-          layer.append(Vector3Variable());
-        layers.push_back(std::move(layer));
+          std::get<Vector3Variables>(layers.back()).append(Vector3Variable());
         break;
       }
       case ColorType: {
-        ColorVariables layer(heap, m, utils::heap::Growth::Fixed);
+        layers.emplace_back(std::in_place_type<ColorVariables>, heap, m, utils::heap::Growth::Fixed );
         for (int i = 0; i < m; i++)
-          layer.append(ColorVariable());
-        layers.push_back(std::move(layer));
+          std::get<ColorVariables>(layers.back()).append(ColorVariable());
         break;
       }
       case TexelType: {
-        TexelVariables layer(heap, m, utils::heap::Growth::Fixed);
+        layers.emplace_back(std::in_place_type<TexelVariables>, heap, m, utils::heap::Growth::Fixed );
         for (int i = 0; i < m; i++)
-          layer.append(TexelVariable());
-        layers.push_back(std::move(layer));
+          std::get<TexelVariables>(layers.back()).append(TexelVariable());
         break;
       }
       case ScalarType:
       default: {
-        ScalarVariables layer(heap, m, utils::heap::Growth::Fixed);
+        layers.emplace_back(std::in_place_type<ScalarVariables>, heap, m, utils::heap::Growth::Fixed );
         for (int i = 0; i < m; i++)
-          layer.append(ScalarVariable());
-        layers.push_back(std::move(layer));
+          std::get<ScalarVariables>(layers.back()).append(ScalarVariable());
         break;
       }
     }
@@ -249,7 +248,7 @@ void Canvas::plotPoint(const Point &pt, int x, int y) {
   size_t index = xy(x, y);
   size_t i = 0;
   for (auto &layer : layers) {
-    V visitor(pt.plots[i++], index);
+    V visitor(pt.plot[i++], index);
     std::visit(visitor, layer);
   }
 }
@@ -258,13 +257,13 @@ Point blendPoints(const Point &begin, const Point &end, float alpha) {
   Point pt;
   pt.p = begin.p + alpha * (end.p - begin.p);
 //do i need to check variants hold same datatype?
-  for (size_t i = 0; i < begin.plots.size(); i++) {
-    auto beginVar = begin.plots[i];
-    auto endVar = end.plots[i];
+  for (size_t i = 0; i < begin.plot.size(); i++) {
+    auto beginVar = begin.plot[i];
+    auto endVar = end.plot[i];
     Variable result = beginVar;
     Vary vary(beginVar, endVar, alpha);
     std::visit(vary, result);
-    pt.plots.push_back(std::move(result));
+    pt.plot.push_back(std::move(result));
   }
   return pt;
 }

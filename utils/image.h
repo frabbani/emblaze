@@ -66,6 +66,8 @@ struct Image {
 int computeMipmapLevel(float sourceArea, float targetArea);
 
 bool writeImageToBMPFile(const Image &image, std::string_view name);
+bool writeImageToPNGFile(const Image &image, std::string_view name);
+
 
 }
 }

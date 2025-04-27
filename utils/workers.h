@@ -44,7 +44,7 @@ class Workers {
   utils::heap::Array<std::unique_ptr<Task>> todo;
   utils::heap::Array<std::unique_ptr<Task>> completed;
 
-  virtual std::unique_ptr<Toolbox> createToolbox() {
+  virtual std::unique_ptr<Toolbox> divyToolbox(int workerId) {
     return std::make_unique<Toolbox>();
   }
   Workers(std::shared_ptr<heap::Heap> heap, uint32_t taskCount, int tasksPer_ = 1)
@@ -52,7 +52,7 @@ class Workers {
       tasksPer(tasksPer_),
       todo(heap, taskCount, heap::Growth::Fixed),
       completed(heap, taskCount, heap::Growth::Fixed) {
-    auto work = [&](std::string id) {
+    auto work = [&](int id) {
       {
         std::unique_lock<std::mutex> lock(mutex);
         this->condition.wait(lock, [&] {
@@ -66,8 +66,8 @@ class Workers {
       bool run = true;
       std::vector<std::unique_ptr<Task>> tasks;
 
-      auto toolbox = createToolbox();
-      LOGINFO("Workers::work", "%s started...", id.c_str());
+      auto toolbox = divyToolbox(id);
+      LOGINFO("Workers::work", "worker #%d started...", id);
       while (run) {
         {
           std::lock_guard<std::mutex> lg(todoMutex);
@@ -78,7 +78,7 @@ class Workers {
               if (todo.size == 0)
                 break;
             }
-            LOGINFO(id.data(), "(%d from %d) grabbed %zu...", tasksPer, todo.size, tasks.size());
+            LOGINFO("Workers::Workers::work", "grabbed %zu tasks (%d remain)", tasks.size(), todo.size);
 
           }
           run = todo.size > 0;
@@ -96,16 +96,15 @@ class Workers {
           tasks.clear();
         }
       }
-      LOGINFO("Workers::work", "%s finished!", id.c_str());
+      LOGINFO("Workers::Workers::work", "worker #%d finished!", id);
     };
 
-    int index = 1;
+    int index = 0;
     for (auto &worker : workers) {
-      char tag[16];
-      sprintf(tag, "worker %d", index++);
-      worker = std::thread([work, tag]() {
-        work(tag);
+      worker = std::thread([work, index]() {
+        work(index);
       });
+      index++;
     }
   }
 

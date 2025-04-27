@@ -1,4 +1,5 @@
 #include "heap.h"
+#include "log.h"
 
 #include <cstring>
 #include <climits>
@@ -17,9 +18,9 @@ Heap::Heap(int hunkSize) {
 }
 
 Heap::Tile *Heap::reserve(int size) {
-  int rem = size & 15;
+  int rem = size & 31;
   if (rem > 0)
-    size += (16 - rem);
+    size += (32 - rem);
 
   auto hash = getHashOf(size);
 
@@ -27,6 +28,9 @@ Heap::Tile *Heap::reserve(int size) {
     reservations++;
    Tile** tile = &table[hash];
    int loc = fetch(sizeof(Tile) + size);
+   if(loc >= int(hunk.size()))
+     LOGERROR("Heap::reserve", "SHIT!!!");
+
    (*tile) = (Tile*) &hunk[loc];
    (*tile)->pos = loc;
    (*tile)->block.size = size;
