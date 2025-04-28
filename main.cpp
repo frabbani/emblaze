@@ -37,7 +37,6 @@
 #include "solvers/solver.h"
 #include "solvers/ambient.h"
 
-
 #include "solver.h"
 
 using namespace sdl2;
@@ -67,9 +66,11 @@ MyGL_Vec3 rayPoints[2];
 std::vector<std::array<int, 3>> traceCells;
 std::vector<std::array<MyGL_Vec3, 3>> dtris;
 std::shared_ptr<utils::heap::Heap> myHeap = nullptr;
-std::shared_ptr<lightmap::Lightmap> lightmap = nullptr; //std::make_shared<lightmap::Lightmap>(myHeap, 256, 256);
-std::shared_ptr<lightmap::LightmapBuilder> builder = nullptr; //(myHeap, lightmap);
+std::shared_ptr<lightmap::Lightmap> lightmap = nullptr;  //std::make_shared<lightmap::Lightmap>(myHeap, 256, 256);
+std::shared_ptr<lightmap::LightmapBuilder> builder = nullptr;  //(myHeap, lightmap);
 std::shared_ptr<bpcd::Grid> grid = nullptr;
+utils::img::Image baked;
+
 //std::unique_ptr<mbz::LightSolver> solver = nullptr;
 
 bool wireFrame = false;
@@ -194,7 +195,6 @@ void loadMap(const bpcd::Grid &grid) {
     auto t = uvs.get(i);
     auto t2 = uv2s.get(i);
     verts[i].t = MyGL_vec4(t2.x, t2.y, t.x, t.y);
-    //verts[i].t2 = MyGL_vec2(t2.x, t2.y);
   }
 
   MyGL_vboPush("Map");
@@ -227,7 +227,6 @@ void loadMap(const bpcd::Grid &grid) {
   printf("******\n");
 }
 
-
 void init() {
 
   pr("*** INIT ***\n");
@@ -240,7 +239,7 @@ void init() {
   grid = builder->grid;
   lightmap::AmbientOcclusionSolver aoSolver(*builder);
   aoSolver.beginJoin();
-  aoSolver.save();
+  aoSolver.save(baked);
 
   mygl = MyGL_initialize(pr, 1, 0);
   mygl->cull.on = GL_FALSE;
@@ -258,24 +257,23 @@ void init() {
   loadFont("lemonmilk");
   loadShaderLibraries();
 
+  MyGL_createEmptyTexture2D("Lightmap", lightmap->canvas.w, lightmap->canvas.h, "rgb10a2", GL_TRUE, GL_FALSE);
+  MyGL_uploadTexture2D("Lightmap", MYGL_WRITE_RGB, MYGL_READWRITE_BYTE, baked.w, baked.h, baked.pixels.data());
+
   /*
-  solver = std::make_unique<mbz::LightSolver>(myHeap);
-  mbz::LightSolver::Lighting lighting;
-  lighting.skyColor = Color(157, 169, 207);
-  lighting.sunColor = Color(240, 238, 185);
-  lighting.sunDirection = Vector3(1.0f, 1.0f, 2.0f).normalized();
-  solver->create("demo_scene", 128, 128, lighting);
-  grid = solver->grid;
-  solver->begin();
- */
-
-
-
+   solver = std::make_unique<mbz::LightSolver>(myHeap);
+   mbz::LightSolver::Lighting lighting;
+   lighting.skyColor = Color(157, 169, 207);
+   lighting.sunColor = Color(240, 238, 185);
+   lighting.sunDirection = Vector3(1.0f, 1.0f, 2.0f).normalized();
+   solver->create("demo_scene", 128, 128, lighting);
+   grid = solver->grid;
+   solver->begin();
+   */
 
   //std::vector<std::array<Vector3, 3>> tris;
   //tris.push_back(tri);
   //grid->build(tris, Vector3(1.0f, 1.0f, 1.0f));
-
   cam.position = { 0.0f, -0.25f, 0.5f };
   cam.upSpeed = 0.0625 / DT_SECS;
   cam.forwardSpeed = 0.25f / DT_SECS;
@@ -540,6 +538,8 @@ void draw() {
   drawBox(rayPoints[1], MyGL_vec3(0.1f, 0.1f, 0.1f), true);
 
   if (!wireFrame) {
+    mygl->samplers[1] = MyGL_str64("Lightmap");
+    MyGL_bindSampler(1);
     mygl->material = MyGL_str64("Vertex Position and Texture");
     for (auto &e : drawElements)
       e.draw(*mygl);

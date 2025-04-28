@@ -337,13 +337,13 @@ void testRasterization() {
       int level = utils::img::computeMipmapLevel(tri_area(t1, t2, t3), tri_area(s1, s2, s3)) - 1;
 
       pts[0].p = M * s1;
-      std::get<rasterizer::TexelVariable>(pts[0].plots[0]).set(t1, texHandle, level);
+      std::get<rasterizer::TexelVariable>(pts[0].plot[0]).set(t1, texHandle, level);
 
       pts[1].p = M * s2;
-      std::get<rasterizer::TexelVariable>(pts[1].plots[0]).set(t2, texHandle, level);
+      std::get<rasterizer::TexelVariable>(pts[1].plot[0]).set(t2, texHandle, level);
 
       pts[2].p = M * s3;
-      std::get<rasterizer::TexelVariable>(pts[2].plots[0]).set(t3, texHandle, level);
+      std::get<rasterizer::TexelVariable>(pts[2].plot[0]).set(t3, texHandle, level);
 
       scanner.buildEdge(pts[0], pts[1]);
       scanner.buildEdge(pts[0], pts[2]);

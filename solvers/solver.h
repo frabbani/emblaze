@@ -72,7 +72,7 @@ class Solver : public utils::multithread::Workers<15> {
 
   Solver(std::reference_wrapper<LightmapBuilder> lightmapBuilder_)
       :
-      utils::multithread::Workers<15>(lightmapBuilder_.get().heap, 512 * 512, 64),
+      utils::multithread::Workers<15>(lightmapBuilder_.get().heap, 512 * 512, 128),
       lightmapBuilder(lightmapBuilder_) {
   }
 

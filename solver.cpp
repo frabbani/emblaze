@@ -193,22 +193,22 @@ bool AOSolver::create(std::string_view fbxName, uint32_t rasterWidth, uint32_t r
     int level = utils::img::computeMipmapLevel(tri_area(t1, t2, t3), tri_area(s1, s2, s3)) - 1;
 
     pts[0].p = M * s1;
-    std::get<rasterizer::ScalarVariable>(pts[0].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[0].plots[1]).v = p1;
-    std::get<rasterizer::Vector3Variable>(pts[0].plots[2]).v = n1;
-    std::get<rasterizer::TexelVariable>(pts[0].plots[3]).set(t1, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[0].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[0].plot[1]).v = p1;
+    std::get<rasterizer::Vector3Variable>(pts[0].plot[2]).v = n1;
+    std::get<rasterizer::TexelVariable>(pts[0].plot[3]).set(t1, texHandle, level);
 
     pts[1].p = M * s2;
-    std::get<rasterizer::ScalarVariable>(pts[1].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[1].plots[1]).v = p2;
-    std::get<rasterizer::Vector3Variable>(pts[1].plots[2]).v = n2;
-    std::get<rasterizer::TexelVariable>(pts[1].plots[3]).set(t2, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[1].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[1].plot[1]).v = p2;
+    std::get<rasterizer::Vector3Variable>(pts[1].plot[2]).v = n2;
+    std::get<rasterizer::TexelVariable>(pts[1].plot[3]).set(t2, texHandle, level);
 
     pts[2].p = M * s3;
-    std::get<rasterizer::ScalarVariable>(pts[2].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[2].plots[1]).v = p3;
-    std::get<rasterizer::Vector3Variable>(pts[2].plots[2]).v = n3;
-    std::get<rasterizer::TexelVariable>(pts[2].plots[3]).set(t3, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[2].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[2].plot[1]).v = p3;
+    std::get<rasterizer::Vector3Variable>(pts[2].plot[2]).v = n3;
+    std::get<rasterizer::TexelVariable>(pts[2].plot[3]).set(t3, texHandle, level);
 
     scanner->buildEdge(pts[0], pts[1]);
     scanner->buildEdge(pts[0], pts[2]);
@@ -496,22 +496,22 @@ bool LightSolver::create(std::string_view fbxName, uint32_t rasterWidth, uint32_
     int level = utils::img::computeMipmapLevel(tri_area(t1, t2, t3), tri_area(s1, s2, s3)) - 1;
 
     pts[0].p = M * s1;
-    std::get<rasterizer::ScalarVariable>(pts[0].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[0].plots[1]).v = p1;
-    std::get<rasterizer::Vector3Variable>(pts[0].plots[2]).v = n1;
-    std::get<rasterizer::TexelVariable>(pts[0].plots[3]).set(t1, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[0].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[0].plot[1]).v = p1;
+    std::get<rasterizer::Vector3Variable>(pts[0].plot[2]).v = n1;
+    std::get<rasterizer::TexelVariable>(pts[0].plot[3]).set(t1, texHandle, level);
 
     pts[1].p = M * s2;
-    std::get<rasterizer::ScalarVariable>(pts[1].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[1].plots[1]).v = p2;
-    std::get<rasterizer::Vector3Variable>(pts[1].plots[2]).v = n2;
-    std::get<rasterizer::TexelVariable>(pts[1].plots[3]).set(t2, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[1].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[1].plot[1]).v = p2;
+    std::get<rasterizer::Vector3Variable>(pts[1].plot[2]).v = n2;
+    std::get<rasterizer::TexelVariable>(pts[1].plot[3]).set(t2, texHandle, level);
 
     pts[2].p = M * s3;
-    std::get<rasterizer::ScalarVariable>(pts[2].plots[0]).v = id;
-    std::get<rasterizer::Vector3Variable>(pts[2].plots[1]).v = p3;
-    std::get<rasterizer::Vector3Variable>(pts[2].plots[2]).v = n3;
-    std::get<rasterizer::TexelVariable>(pts[2].plots[3]).set(t3, texHandle, level);
+    std::get<rasterizer::ScalarVariable>(pts[2].plot[0]).v = id;
+    std::get<rasterizer::Vector3Variable>(pts[2].plot[1]).v = p3;
+    std::get<rasterizer::Vector3Variable>(pts[2].plot[2]).v = n3;
+    std::get<rasterizer::TexelVariable>(pts[2].plot[3]).set(t3, texHandle, level);
 
     scanner->buildEdge(pts[0], pts[1]);
     scanner->buildEdge(pts[0], pts[2]);

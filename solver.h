@@ -5,15 +5,12 @@
 #include "math/bpcd/grid.h"
 #include "utils/workers.h"
 #include "utils/image.h"
-#include "rasterizer/rasterizer.h"
+#include "solvers/lightmap.h"
 #include "thirdparty/mtwister/mtwister.h"
 
 #include <array>
 #include <vector>
 #include <string_view>
-#include <mutex>
-#include <thread>
-#include <condition_variable>
 #include <memory>
 
 namespace mbz {
@@ -59,7 +56,7 @@ class AOSolver : public utils::multithread::Workers<numWorkers> {
     }
   };
 
-  virtual std::unique_ptr<utils::multithread::Toolbox> createToolbox() override {
+  virtual std::unique_ptr<utils::multithread::Toolbox> divyToolbox(int workerId) override {
     seed += seed;
     return std::make_unique<Toolbox>(seed);
   }
@@ -73,9 +70,9 @@ class AOSolver : public utils::multithread::Workers<numWorkers> {
   }
   ~AOSolver() {
     if (vertices.size)
-      vertices.free();
+      vertices.release();
     if (triangles.size)
-      triangles.free();
+      triangles.release();
   }
   bool create(std::string_view fbxName, uint32_t rasterWidth, uint32_t rasterHeight);
   void save();
@@ -91,6 +88,44 @@ class LightSolver : public utils::multithread::Workers<numWorkers> {
   };
 
   struct Lighting{
+    struct Direct{
+      Color color;
+      float intensity;
+      Vector3 direction;
+      float radius;
+    };
+
+    struct Point{
+      Sphere sphere;
+      Color color;
+      float intensity;
+    };
+
+    struct Area{
+      Color color;
+      Rect rect;
+      float intensity;
+    };
+
+    struct Cone{
+      Vector3 origin;
+      Vector3 direction;
+      float angle; //in degrees
+      float intensity;
+    };
+
+    struct Dome{
+      float angle;  //in degrees
+      Vector3 direction;
+      Color color;
+      float intensity;
+    };
+
+    std::vector<Dome> domeLights;
+    std::vector<Direct> directLights;
+    std::vector<Point> pointLights;
+    std::vector<Area> areaLights;
+
 	  Color skyColor;
 	  Color sunColor;
 	  Vector3 sunDirection;
@@ -131,7 +166,7 @@ class LightSolver : public utils::multithread::Workers<numWorkers> {
     }
   };
 
-  virtual std::unique_ptr<utils::multithread::Toolbox> createToolbox() override {
+  virtual std::unique_ptr<utils::multithread::Toolbox> divyToolbox(int workerId) override {
     seed += seed;
     return std::make_unique<Toolbox>(seed);
   }
@@ -146,9 +181,9 @@ class LightSolver : public utils::multithread::Workers<numWorkers> {
   }
   ~LightSolver() {
     if (vertices.size)
-      vertices.free();
+      vertices.release();
     if (triangles.size)
-      triangles.free();
+      triangles.release();
   }
   bool create(std::string_view fbxName, uint32_t rasterWidth, uint32_t rasterHeight, Lighting lighting);
   void save();

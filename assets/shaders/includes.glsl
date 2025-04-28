@@ -46,6 +46,17 @@ layout(location = 1) in vec4 vtx_t;
 
 #endif
 
+#ifdef VTX_P_T2
+
+#ifdef __vert__
+layout(location = 0) in vec4 vtx_p;
+layout(location = 1) in vec4 vtx_t0;
+layout(location = 2) in vec4 vtx_t1;
+#endif
+
+#endif
+
+
 #ifdef VTX_P_N_T2
 
 #ifdef __vert__

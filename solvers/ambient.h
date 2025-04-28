@@ -43,7 +43,7 @@ struct AmbientOcclusionSolver : public Solver {
     Vector3 final;
     virtual void perform(utils::multithread::Toolbox *toolbox_) override {
       Toolbox *toolbox = dynamic_cast<Toolbox*>(toolbox_);
-      const int N = 80;
+      const int N = 40;
       int total = 0;
       float sum = 0.0f;
       while (total < N) {
@@ -58,17 +58,16 @@ struct AmbientOcclusionSolver : public Solver {
         if (!trace.point.has_value())
           sum += d.dot(n);
       }
-      sum *= 2.0f / float(N);
-      sum = std::clamp(sum, 0.0f, 1.0f);
-      final.x = sum * float(c.r) * toolbox->skyColor.x;
-      final.y = sum * float(c.g) * toolbox->skyColor.y;
-      final.z = sum * float(c.b) * toolbox->skyColor.z;
+      sum *= 255.0f * 2.0f / float(N);
+      sum = std::clamp(sum, 0.0f, 255.0f);
+      final.x = sum * toolbox->skyColor.x;
+      final.y = sum * toolbox->skyColor.y;
+      final.z = sum * toolbox->skyColor.z;
     }
   };
 
-  void save() {
+  void save(utils::img::Image &result, std::string_view filename = "") {
     int w(lightmapBuilder.get().lightmap->canvas.w), h(lightmapBuilder.get().lightmap->canvas.h);
-    utils::img::Image result;
     result.w = w;
     result.h = h;
     result.pixels = std::vector<Color>(w * h);
@@ -82,13 +81,13 @@ struct AmbientOcclusionSolver : public Solver {
         delete t;
       }
     }
-    utils::img::writeImageToPNGFile(result, "ao");
-    LOGINFO("AmbientOcclusionSolver::save", "saved result as 'ao.png'");
-
+    if (filename.size()) {
+      utils::img::writeImageToPNGFile(result, filename.data());
+      LOGINFO("AmbientOcclusionSolver::save", "saved result to disk");
+    }
   }
 
 };
-
 
 }
 }

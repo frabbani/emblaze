@@ -32,10 +32,11 @@ void main(){
 #ifdef __frag__
 
 layout(binding = 0) uniform sampler2D tex;
+layout(binding = 1) uniform sampler2D lightmap;
 
 
 void main(){
-  vec3 c = texture( tex, var_t.xy ).rgb;
+  vec3 c = texture( tex, var_t.xy ).rgb * texture( lightmap, var_t.zw ).rgb;
   gl_FragData[0] = vec4( c, 1.0 );
 }
 
